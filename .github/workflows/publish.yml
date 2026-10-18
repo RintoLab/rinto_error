@@ -1,0 +1,78 @@
+name: Publish to Hex
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      REF: ${{ github.ref }}
+      SHA: ${{ github.sha }}
+    steps:
+      - name: Check out the triggering revision
+        uses: actions/checkout@v4
+
+      - name: Install Elixir 1.20.2 / OTP 29.0.4
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20.2"
+          otp-version: "29.0.4"
+          version-type: strict
+
+      - name: Check the secret and the tag version
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_PUBLISH_KEY }}
+        run: |
+          set -euo pipefail
+          : "${HEX_API_KEY:?secret HEX_PUBLISH_KEY must not be empty}"
+          : "${REF:?github.ref must not be empty}"
+          : "${SHA:?github.sha must not be empty}"
+          test "$(git rev-parse HEAD)" = "${SHA}"
+
+          version="$(elixir -e 'Mix.start(); Code.compile_file("mix.exs"); IO.write(RintoError.MixProject.project()[:version])')"
+          case "${REF}" in
+            refs/tags/v*)
+              tag="${REF#refs/tags/v}"
+              test "${tag}" = "${version}"
+              ;;
+            refs/tags/*)
+              printf 'tag must start with v, for example v%s\n' "${version}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Cache the Dialyzer PLT
+        uses: actions/cache@v4
+        with:
+          path: _build/plts
+          key: dialyzer-${{ runner.os }}-otp-29.0.4-elixir-1.20.2-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            dialyzer-${{ runner.os }}-otp-29.0.4-elixir-1.20.2-
+
+      - name: Test and build docs
+        run: |
+          set -euo pipefail
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix format --check-formatted
+          mix test
+          mix dialyzer
+          mix docs
+
+      - name: Publish to Hex
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_PUBLISH_KEY }}
+        run: |
+          set -euo pipefail
+          mix hex.publish --yes
