@@ -11,6 +11,10 @@ Both use `defimpl RintoError.Source` with `build/1` and `to_payload/2` through
 protocol dispatch. The supplied Changeset implementation can be excluded at
 compile time so your application can provide its own (see the Ecto guide).
 
+## Why start at 0.2.0?
+
+RintoError's first public release is `0.2.0`. This is a deliberate release decision: the core error model, integration paths, tests, and bilingual guides form the baseline we have chosen to publish and maintain. The version marks that starting point; it does not imply a previously published `0.1.0` or a `1.0` API stability guarantee.
+
 ## Installation
 
 Requires Elixir `~> 1.17`. Add RintoError to your dependencies and run `mix deps.get`:
@@ -18,7 +22,7 @@ Requires Elixir `~> 1.17`. Add RintoError to your dependencies and run `mix deps
 ```elixir
 def deps do
   [
-    {:rinto_error, "~> 0.1.0"}
+    {:rinto_error, "~> 0.2.0"}
   ]
 end
 ```
