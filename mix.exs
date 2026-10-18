@@ -44,6 +44,7 @@ defmodule RintoError.MixProject do
 
   defp dialyzer do
     [
+      plt_add_apps: [:mix],
       plt_core_path: "_build/plts"
     ]
   end
@@ -67,7 +68,23 @@ defmodule RintoError.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: [
+        "README.md",
+        "guides/01_design_en.md",
+        "guides/02_application_errors_en.md",
+        "guides/03_ecto_en.md",
+        "guides/04_custom_structs_en.md",
+        "guides/05_output_and_logging_en.md",
+        "guides/01_design_cn.md",
+        "guides/02_application_errors_cn.md",
+        "guides/03_ecto_cn.md",
+        "guides/04_custom_structs_cn.md",
+        "guides/05_output_and_logging_cn.md"
+      ],
+      groups_for_extras: [
+        {"Guides · English", ~r/guides\/.*_en\.md/},
+        {"指南 · 中文", ~r/guides\/.*_cn\.md/}
+      ],
       source_url: @source_url,
       source_ref: "v#{@version}"
     ]
