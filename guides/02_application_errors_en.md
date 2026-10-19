@@ -125,13 +125,13 @@ Internal logic matches the stored kind; `as:` only changes its name in the publi
 
 ## Describe error contracts with typespecs
 
-The Error module generates types that your application can reference. Use `MyApp.Error.t()` for ordinary error returns, or `MyApp.Error.t(raw_type)` when you know the shape of raw.
+The Error module generates types that your application can reference. Use `MyApp.Error.t()` for ordinary error returns, or `MyApp.Error.t(kind_type)` to constrain the kind, such as `Error.t(:payment_timeout)` or `Error.t(:payment_timeout | :payment_declined)`.
 
 ```elixir
 defmodule MyApp.PaymentResult do
   require MyApp.Error, as: Error
 
-  @spec from_timeout() :: {:error, Error.t(:timeout)}
+  @spec from_timeout() :: {:error, Error.t(:payment_timeout)}
   def from_timeout do
     {:error, Error.new(kind: :payment_timeout, raw: :timeout)}
   end
@@ -144,9 +144,9 @@ defmodule MyApp.PaymentResult do
 end
 ```
 
-`Error.t(:timeout)` constrains **raw**, not kind. `Error.known_kind()` is the union of internal kinds declared in the catalog; `Error.payload()` describes public output. The example's `kind/1` assumes input from the validated construction API.
+`Error.t(:payment_timeout)` constrains **kind** to `:payment_timeout`, while raw can hold any value, such as `:timeout` above. `Error.known_kind()` is the union of internal kinds declared in the catalog. `Error.t()` defaults to it and is equivalent to `Error.t(Error.known_kind())`; `Error.payload()` describes public output. These types are all generated in the host Error module, so `t()` can directly reference that module's `known_kind()`.
 
-Typespecs communicate contracts to callers and Dialyzer; they add no runtime checks. The kind field in `Error.t()` remains `atom()`. The construction API validates its actual value against the catalog.
+Typespecs communicate contracts to callers and Dialyzer; they add no runtime checks. An empty catalog has `known_kind()` equal to `none()`, so the default `Error.t()` has no possible values. Use `Error.t(atom())` explicitly to describe directly constructed errors with arbitrary atom kinds. Raw remains `term()`. The construction API validates the actual kind against the catalog.
 
 ## Centralize, inspect, and validate errors
 

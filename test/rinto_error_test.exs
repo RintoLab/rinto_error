@@ -8,6 +8,22 @@ defmodule RintoErrorTest do
 
   @kind :broken
 
+  test "parameterized error contracts describe kind independently of raw" do
+    error = RintoError.Fixture.ErrorContract.from_database()
+
+    assert %Error{kind: :broken, raw: :db_down} = error
+    assert RintoError.Fixture.ErrorContract.kind(error) == :broken
+  end
+
+  test "default error contracts accept catalog kinds and explicit types allow arbitrary kinds" do
+    for kind <- Error.kinds() do
+      assert RintoError.Fixture.ErrorContract.known_kind(Error.exception(kind)) == kind
+    end
+
+    error = %Error{kind: :outside_catalog, raw: nil}
+    assert RintoError.Fixture.ErrorContract.arbitrary_kind(error) == :outside_catalog
+  end
+
   describe "kinds/0" do
     test "lists all declared kinds in entry order" do
       assert Error.kinds() == [:missing, :broken, :local, :silent, :changeset_error]

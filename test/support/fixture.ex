@@ -12,6 +12,24 @@ defmodule RintoError.Fixture.Error do
   end
 end
 
+defmodule RintoError.Fixture.ErrorContract do
+  @moduledoc false
+
+  require RintoError.Fixture.Error, as: Error
+
+  @spec from_database() :: Error.t(:broken)
+  def from_database, do: Error.new(kind: :broken, raw: :db_down)
+
+  @spec kind(Error.t(:broken)) :: :broken
+  def kind(%Error{kind: kind}), do: kind
+
+  @spec known_kind(Error.t()) :: Error.known_kind()
+  def known_kind(%Error{kind: kind}), do: kind
+
+  @spec arbitrary_kind(Error.t(atom())) :: atom()
+  def arbitrary_kind(%Error{kind: kind}), do: kind
+end
+
 defmodule RintoError.Fixture.ConfiguredError do
   @moduledoc false
 

@@ -91,8 +91,8 @@ defmodule RintoError do
 
   Reference types on your application module, such as `MyApp.Error.t()`:
 
-  * `t()` / `t(raw_type)` — Error with arbitrary / specified raw data. The parameter
-    constrains raw, not kind; the kind field remains `atom()`.
+  * `t()` / `t(kind_type)` — Error with a declared / specified kind. `t()` defaults
+    to `t(known_kind())`; the parameter constrains `kind`, while `raw` remains `term()`.
   * `known_kind()` — union of declared internal kinds; `none()` for an empty catalog.
   * `payload()` — public output; `kind_detail()` — one catalog declaration.
   * `origin()` / `metadata()` — construction location / diagnostic context.
@@ -147,7 +147,7 @@ defmodule RintoError do
       The default omits `raw` and `__source__` and inspects error details as-is.
       """
       @impl true
-      @spec message(t()) :: String.t()
+      @spec message(t(atom())) :: String.t()
       def message(error) do
         RintoError.Message.format(error, @rinto_error_inspect_opts)
       end
@@ -351,21 +351,22 @@ defmodule RintoError do
       @type metadata :: %{optional(:origin) => origin(), optional(atom()) => term()}
 
       @typedoc """
-      The type parameter constrains `raw` on this node. `kind` is `atom()`
-      on the struct because directly built nodes are not part of the closed table.
+      The type parameter constrains `kind` on this node. `raw` remains `term()`.
+      The unparameterized type defaults to this module's declared `known_kind()`.
+      Use `t(atom())` to describe directly built nodes with arbitrary atom kinds.
       """
-      @type t(raw) :: %unquote(module){
+      @type t(kind) :: %unquote(module){
               __exception__: true,
               __source__: module() | nil,
-              raw: raw,
-              kind: atom(),
+              raw: term(),
+              kind: kind,
               message: String.t() | nil,
               data: map(),
               errors: [term()],
               metadata: metadata()
             }
 
-      @type t() :: t(term())
+      @type t() :: t(known_kind())
 
       @typedoc "Public result with details defined by the caller or source."
       @type payload :: %{kind: atom(), data: map(), errors: [term()]}
@@ -521,7 +522,7 @@ defmodule RintoError do
       Missing implementations raise `Protocol.UndefinedError`; exceptions from
       conversion propagate unchanged.
       """
-      @spec to_payload(t()) :: payload()
+      @spec to_payload(t(atom())) :: payload()
       def to_payload(%unquote(module){} = error) do
         {data, errors} =
           case error.__source__ do
@@ -542,7 +543,7 @@ defmodule RintoError do
       `ArgumentError` when the status is omitted or the kind is not in the
       table. This helper does not affect construction or payload output.
       """
-      @spec http_status(t()) :: pos_integer()
+      @spec http_status(t(atom())) :: pos_integer()
       def http_status(%unquote(module){kind: kind}) do
         RintoError.fetch_status(kind, statuses())
       end

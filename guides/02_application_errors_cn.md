@@ -125,13 +125,13 @@ end
 
 ## 用 typespec 表达错误约定
 
-Error 模块会生成可直接引用的类型。业务函数的错误返回通常使用 `MyApp.Error.t()`；明确知道 raw 的形状时，可以用 `MyApp.Error.t(raw_type)` 进一步描述。
+Error 模块会生成可直接引用的类型。业务函数的错误返回通常使用 `MyApp.Error.t()`；明确知道错误类别时，可以用 `MyApp.Error.t(kind_type)` 约束 kind，例如 `Error.t(:payment_timeout)` 或 `Error.t(:payment_timeout | :payment_declined)`。
 
 ```elixir
 defmodule MyApp.PaymentResult do
   require MyApp.Error, as: Error
 
-  @spec from_timeout() :: {:error, Error.t(:timeout)}
+  @spec from_timeout() :: {:error, Error.t(:payment_timeout)}
   def from_timeout do
     {:error, Error.new(kind: :payment_timeout, raw: :timeout)}
   end
@@ -144,9 +144,9 @@ defmodule MyApp.PaymentResult do
 end
 ```
 
-`Error.t(:timeout)` 约束的是 **raw**，不是 kind。`Error.known_kind()` 是 catalog 声明的内部 kind 联合类型；`Error.payload()` 描述公开输出。上例的 `kind/1` 假定输入来自经过校验的构造 API。
+`Error.t(:payment_timeout)` 将 **kind** 约束为 `:payment_timeout`，raw 仍可为任意值，上例中为 `:timeout`。`Error.known_kind()` 是 catalog 声明的内部 kind 联合类型，`Error.t()` 默认使用它，等价于 `Error.t(Error.known_kind())`；`Error.payload()` 描述公开输出。这些类型都生成在宿主 Error 模块中，因此 `t()` 可以直接引用同一模块的 `known_kind()`。
 
-Typespec 为调用方和 Dialyzer 提供约定，不会增加运行时检查。`Error.t()` 中的 kind 类型仍是 `atom()`；实际合法性由构造 API 按 catalog 验证。
+Typespec 为调用方和 Dialyzer 提供约定，不会增加运行时检查。空 catalog 的 `known_kind()` 为 `none()`，因此默认 `Error.t()` 没有可取值；需要描述任意 atom kind 的直接构造对象时，可以显式使用 `Error.t(atom())`。raw 的类型仍为 `term()`；实际 kind 的合法性由构造 API 按 catalog 验证。
 
 ## 将错误集中声明、管理和验证
 
